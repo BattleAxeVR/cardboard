@@ -60,7 +60,7 @@ Vector3 PositionData::GetExtrapolatedForTimeStamp(const int64_t timestamp_ns) {
     
     Vector3 vSum = {0,0,0};
     
-    for (int i=1; i<buffer_size_; i++) {
+    for (int i=1; i<(int)buffer_size_; i++) {
         double dT = timestamp_buffer_[i] - timestamp_buffer_[i-1];
         Vector3 dX = buffer_[i] - buffer_[i-1];
         vSum += dX / dT;
