@@ -145,7 +145,7 @@ class CardboardInputProvider {
 
     // Aryzon 6DoF
     void Add6DoF(int64_t timestamp_ns, float* position, float* orientation) {
-        cardboard_api_->AddSixDoFData(timestamp_ns, position, orientation);
+        cardboard_input_api_->AddSixDoFData(timestamp_ns, position, orientation);
     }
 
   UnitySubsystemErrorCode FillDeviceDefinition(
