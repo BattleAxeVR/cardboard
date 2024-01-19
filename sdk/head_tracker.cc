@@ -263,6 +263,31 @@ void HeadTracker::OnGyroscopeData(const GyroscopeData& event) {
   sensor_fusion_->ProcessGyroscopeSample(event);
 }
 
+// Aryzon 6DoF
+void HeadTracker::AddSixDoFData(int64_t timestamp_ns, float* pos, float* orientation) {
+  if (!is_tracking_) {
+    return;
+  }
+    position_data_->AddSample(Vector3(pos[0], pos[1], pos[2]), timestamp_ns);
+
+    if (position_data_->IsValid() && rotation_data_->IsValid()) {
+        // 6DoF timestamp needs to be before the latest rotation_data timestamp
+        Rotation gyroAtTimeOfSixDoF = Rotation::FromQuaternion(rotation_data_->GetInterpolatedForTimeStamp(timestamp_ns));
+        Rotation sixDoFRotation = Rotation::FromQuaternion(Vector4(0, orientation[1], 0, orientation[3]));
+
+        Rotation difference = gyroAtTimeOfSixDoF * -sixDoFRotation;
+
+        // Only synchronize rotation around the y axis
+        Vector4 diffQ = difference.GetQuaternion();
+        diffQ[0] = 0;
+        diffQ[2] = 0;
+
+        // Quaternion will be normalized in this call:
+        difference_to_6DoF_.SetQuaternion(diffQ);
+    }
+}
+
+
 Rotation HeadTracker::GetRotation(
     CardboardViewportOrientation viewport_orientation,
     int64_t timestamp_ns) const {
