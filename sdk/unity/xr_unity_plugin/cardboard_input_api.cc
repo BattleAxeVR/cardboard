@@ -112,6 +112,21 @@ void CardboardInputApi::GetHeadTrackerPose(float* position,
       selected_viewport_orientation_, position, orientation);
 }
 
+  // Aryzon 6DoF
+void CardboardInputApi::AddSixDoFData(int64_t timestamp_nano, float* position, float* orientation) {
+  //LOGW("Head tracker was queried when setting 6DoF data.");
+  if (head_tracker_ == nullptr) {
+	LOGW("Uninitialized head tracker was queried when setting 6DoF data.");
+	return;
+  }
+  // Convert from Unity space to Cardboard space
+  position[2] = -position[2];
+  orientation[2] = -orientation[2];
+
+  CardboardHeadTracker_addSixDoFData(head_tracker_.get(), timestamp_nano, position, orientation);
+}
+
+
 void CardboardInputApi::SetViewportOrientation(
     CardboardViewportOrientation viewport_orientation) {
   selected_viewport_orientation_ = viewport_orientation;
