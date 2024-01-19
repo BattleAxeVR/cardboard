@@ -165,9 +165,15 @@ void HeadTracker::GetPose(int64_t timestamp_ns,
                           std::array<float, 3>& out_position,
                           std::array<float, 4>& out_orientation) {
 
-  Rotation predicted_rotation;
+
+  const RotationState latest_rotation_state = sensor_fusion_->GetLatestRotationState();
+
+#if 0
+
+    Rotation orientation;
   const PoseState pose_state = sensor_fusion_->GetLatestPoseState();
-  predicted_rotation = pose_prediction::PredictPose(timestamp_ns, pose_state);
+    orientation = pose_prediction::PredictPose(timestamp_ns, pose_state);
+
   // In order to update our pose as the sensor changes, we begin with the
   // inverse default orientation (the orientation returned by a reset sensor),
   // apply the current sensor transformation, and then transform into display
@@ -183,8 +189,10 @@ void HeadTracker::GetPose(int64_t timestamp_ns,
   } else { // Portrait
       sensor_to_display = Rotation::FromAxisAndAngle(Vector3(0, 0, 1), 0.0);
   }
-  
-  const Vector4 orientation = GetRotation(viewport_orientation, timestamp_ns).GetQuaternion();
+#endif
+
+  Rotation rotation = GetRotation(viewport_orientation, timestamp_ns);
+  Vector4 orientation = rotation.GetQuaternion();
 
   if (is_viewport_orientation_initialized_ &&
       viewport_orientation != viewport_orientation_) {
@@ -197,22 +205,24 @@ void HeadTracker::GetPose(int64_t timestamp_ns,
 
   // Aryzon 6DoF
   // Save rotation sample with timestamp to be used in AddSixDoFData()
-  rotation_data_->AddSample(rotation.GetQuaternion(), timestamp_ns);
+  rotation_data_->AddSample(orientation, timestamp_ns);
 
-  if (position_data_->IsValid() && pose_state.timestamp - position_data_->GetLatestTimestamp() < max6DoFTimeDifference) {
+  if (position_data_->IsValid() && latest_rotation_state.timestamp - position_data_->GetLatestTimestamp() < max6DoFTimeDifference) {
       // 6DoF is recently updated
 
       rotation = rotation * -difference_to_6DoF_;
-
-      Vector3 p = position_data_->GetExtrapolatedForTimeStamp(timestamp_ns);
-      std::array<float, 3> predicted_position_ = {(float)p[0], (float)p[1], (float)p[2]};
+      orientation = rotation.GetQuaternion();
 
 	  out_orientation[0] = static_cast<float>(orientation[0]);
 	  out_orientation[1] = static_cast<float>(orientation[1]);
 	  out_orientation[2] = static_cast<float>(orientation[2]);
 	  out_orientation[3] = static_cast<float>(orientation[3]);
 
+      Vector3 p = position_data_->GetExtrapolatedForTimeStamp(timestamp_ns);
+      std::array<float, 3> predicted_position_ = {(float)p[0], (float)p[1], (float)p[2]};
+
       out_position = predicted_position_;
+
   } else {
       // 6DoF is not recently updated
 
@@ -224,7 +234,7 @@ void HeadTracker::GetPose(int64_t timestamp_ns,
       out_position = ApplyNeckModel(out_orientation, 1.0);
 
       if (position_data_->IsValid()) {
-          // Apply last known 6DoF position if 6DoF was data previously added, while still applying neckmodel.
+          // Apply last known 6DoF position if 6DoF was data previously added, while still applying neck model.
 
           Vector3 last_known_position_ = position_data_->GetLatestData();
           out_position[0] += (float)last_known_position_[0];
