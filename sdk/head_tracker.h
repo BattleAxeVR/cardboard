@@ -105,14 +105,15 @@ class HeadTracker {
   // GetPose().
   CardboardViewportOrientation viewport_orientation_;
 
-  // Tells wheter the attribute viewport_orientation_ has been initialized or
-  // not.
-  bool is_viewport_orientation_initialized_;
-  
   // Aryzon 6DoF
   RotationData *rotation_data_;
   PositionData *position_data_;
   Rotation difference_to_6DoF_;
+
+  // Tells whether the attribute viewport_orientation_ has been initialized or
+  // not.
+  bool is_viewport_orientation_initialized_;
+
 };
 
 }  // namespace cardboard
